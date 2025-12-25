@@ -8,6 +8,7 @@ This document outlines the procedures for containerizing and deploying the appli
 2.  [Configuration Files](#-configuration-files)
 3.  [Docker Setup](#-docker-setup)
 4.  [Deployment Commands](#-deployment-commands)
+5.  [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -64,14 +65,16 @@ WORKDIR /app
 # Copy package definition
 COPY package.json package-lock.json* ./
 
-# Install dependencies
+# Update npm to latest version (optional, suppresses version warnings)
+RUN npm install -g npm@latest
+
+# Install dependencies (including devDependencies for build tools like tsc and vite)
 RUN npm install
 
 # Copy all source code
 COPY . .
 
-# Build Arguments (Optional - if baking keys, though env vars at runtime are safer for server-side apps. 
-# Since this is a client-side app, keys must be present at build time or injected via window object)
+# Build Arguments
 ARG API_KEY
 ENV VITE_API_KEY=$API_KEY
 
@@ -178,4 +181,26 @@ gcloud run deploy spot-advisor \
   --region us-central1 \
   --allow-unauthenticated \
   --port 3000
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Build Failures (TS2307: Cannot find module)
+If you encounter TypeScript errors during the build process inside Docker (e.g., `Cannot find module './hooks/useCapacityLogic'`), ensure your `tsconfig.json` is correctly configured to include the `src` directory.
+
+**Correct `tsconfig.json` configuration:**
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["./src/*"]
+    },
+    // ... other options
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "vite.config.ts"]
+}
 ```

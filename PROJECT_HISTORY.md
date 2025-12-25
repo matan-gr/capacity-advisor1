@@ -171,6 +171,14 @@ We employ a custom hook acting as a Controller.
 
 ## 7. Change Log
 
+### v2.15.2 (Infrastructure & UX Refinement)
+*   **Infrastructure:** Refactored project structure to standard `src/` layout. Updated Docker build process with explicit TypeScript inclusion and npm updates.
+*   **Build Stability:** Fixed `tsconfig.json` module resolution and `vite-env.d.ts` to resolve build-time module errors.
+*   **UX Improvements:**
+    *   **ScoreGauge:** Optimized layout to prevent text truncation on description labels.
+    *   **GeminiCard:** Enhanced Markdown rendering (tables, lists, headers), added TL;DR summary, and increased model temperature to 1.0 for richer insights.
+*   **Bug Fixes:** Resolved infinite re-render loop in `useStreamAI` via memoization.
+
 ### v2.15.1 (Optimizations)
 *   **Aesthetics:** Refined "Analyze Capacity" button with a diffuse glow effect for a more elegant UI.
 *   **Data Validity:** Added timestamp cache busting to API requests to guarantee fresh capacity scores.
