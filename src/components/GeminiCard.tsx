@@ -125,7 +125,7 @@ const renderTable = (lines: string[], keyPrefix: string) => {
     );
 };
 
-const GeminiCard: React.FC<GeminiCardProps> = React.memo(({ data, loading }) => {
+const GeminiCard = React.memo(({ data, loading }: GeminiCardProps) => {
   if (loading) return <LoadingStateDisplay />;
 
   if (!data) {

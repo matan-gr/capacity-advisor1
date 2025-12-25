@@ -17,7 +17,12 @@ import {
   Copy,
   MapPin,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  Sparkles,
+  Link,
+  BarChart,
+  PieChart
 } from 'lucide-react';
 
 export const Icons = {
@@ -32,10 +37,16 @@ export const Icons = {
   Cancel: (props: any) => <X size={16} {...props} />,
   Refresh: (props: any) => <RefreshCw size={16} {...props} />,
   Chip: (props: any) => <Cpu size={14} {...props} />,
+  Cpu: (props: any) => <Cpu size={14} {...props} />,
   Moon: (props: any) => <Moon size={16} {...props} />,
   Sun: (props: any) => <Sun size={16} {...props} />,
   Copy: (props: any) => <Copy size={12} {...props} />,
   MapPin: (props: any) => <MapPin size={14} {...props} />,
   Globe: (props: any) => <Globe size={14} {...props} />,
-  Alert: (props: any) => <AlertTriangle size={16} {...props} />
+  Alert: (props: any) => <AlertTriangle size={16} {...props} />,
+  Search: (props: any) => <Search size={14} {...props} />,
+  Sparkles: (props: any) => <Sparkles size={14} {...props} />,
+  Link: (props: any) => <Link size={14} {...props} />,
+  BarChart: (props: any) => <BarChart size={14} {...props} />,
+  PieChart: (props: any) => <PieChart size={14} {...props} />
 };

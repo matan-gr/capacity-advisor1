@@ -10,7 +10,7 @@ interface ScoreGaugeProps {
   delay?: number;
 }
 
-const ScoreGauge: React.FC<ScoreGaugeProps> = React.memo(({ score, label, description, delay = 0 }) => {
+const ScoreGauge = React.memo(({ score, label, description, delay = 0 }: ScoreGaugeProps) => {
   const [animatedScore, setAnimatedScore] = useState(0);
   
   useEffect(() => {

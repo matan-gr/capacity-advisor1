@@ -1,110 +1,74 @@
 
-import { useState, useCallback, useRef, useMemo } from 'react';
-import { streamGroundingInsights } from '../services/geminiService';
+import { useState, useCallback, useRef } from 'react';
+import { streamGeminiInsight } from '../services/geminiService';
 import { AppState, GroundingMetadata } from '../types';
 import { MachineTypeOption } from '../config';
 
-interface UseStreamAIResult {
-  output: string;
-  metadata: GroundingMetadata | null;
-  debug: { prompt: string; model: string } | null;
-  trigger: (state: AppState, machineSpecs: MachineTypeOption | undefined) => Promise<void>;
-  isLoading: boolean;
-  isStreaming: boolean;
-  abort: () => void;
-  reset: () => void;
-}
-
-export const useStreamAI = (): UseStreamAIResult => {
+export const useStreamAI = () => {
   const [output, setOutput] = useState('');
   const [metadata, setMetadata] = useState<GroundingMetadata | null>(null);
-  const [debug, setDebug] = useState<{ prompt: string; model: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [debug, setDebug] = useState<any>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   
-  // Ref to handle aborting/cleanup if needed (though generator cancellation is implicit if we stop iterating, 
-  // explicitly breaking the loop is better)
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // Ref to track if unmounted
+  const isMounted = useRef(true);
 
-  const abort = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setIsStreaming(false);
-    setIsLoading(false);
-  }, []);
-
-  const reset = useCallback(() => {
-    abort();
+  const trigger = useCallback(async (state: AppState, machineDetails: MachineTypeOption | undefined) => {
+    setIsStreaming(true);
     setOutput('');
     setMetadata(null);
     setDebug(null);
-  }, [abort]);
 
-  const trigger = useCallback(async (state: AppState, machineSpecs: MachineTypeOption | undefined) => {
-    reset(); // Reset before starting new trigger
-    abortControllerRef.current = new AbortController();
-    
-    setIsLoading(true);
-    setIsStreaming(true);
-
-    try {
-      const generator = streamGroundingInsights(state, machineSpecs);
-      
-      for await (const chunk of generator) {
-        if (abortControllerRef.current?.signal.aborted) break;
-
-        if (chunk.type === 'text') {
-           setOutput(prev => prev + chunk.content);
-        } 
-        else if (chunk.type === 'debug') {
-           setDebug(chunk.content);
-        }
-        else if (chunk.type === 'metadata') {
-           // Parse sources from SDK format to our App format
-           const raw = chunk.content;
-           const sources: { title: string; uri: string }[] = [];
-           
-           if (raw.groundingChunks) {
-             raw.groundingChunks.forEach((c: any) => {
-               if (c.web?.uri && c.web?.title) {
-                 sources.push({ title: c.web.title, uri: c.web.uri });
-               }
-             });
-           }
-           // We might receive multiple metadata chunks, usually we want to merge or take the last one.
-           // Search grounding usually comes once.
-           setMetadata(prev => ({ 
-             insight: '', // Insight is in the text stream
-             sources: sources.length > 0 ? sources : (prev?.sources || [])
-           }));
-        }
+    await streamGeminiInsight(
+      state,
+      machineDetails,
+      (text) => {
+        if (isMounted.current) setOutput(text);
+      },
+      (meta) => {
+        if (isMounted.current) setMetadata(meta);
+      },
+      (dbg) => {
+        if (isMounted.current) setDebug(dbg);
       }
-    } catch (e) {
-      console.error("Stream error", e);
-      setOutput(prev => prev + "\n\n**Connection interrupted.**");
-    } finally {
-      setIsLoading(false);
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-    }
-  }, [reset]);
+    );
 
+    if (isMounted.current) setIsStreaming(false);
+  }, []);
+
+  const reset = useCallback(() => {
+    setOutput('');
+    setMetadata(null);
+    setDebug(null);
+    setIsStreaming(false);
+  }, []);
+
+  const abort = useCallback(() => {
+      // In a real implementation, we would pass an AbortSignal to the service
+      setIsStreaming(false);
+  }, []);
+
+  // Cleanup
+  useEffect(() => {
+      return () => { isMounted.current = false; };
+  }, []);
+
+  // Memoize the derived metadata to prevent infinite loops in consumers
   const derivedMetadata = useMemo(() => {
-    if (metadata) return { ...metadata, insight: output };
-    if (output) return { insight: output, sources: [] };
-    return null;
-  }, [metadata, output]);
+      if (metadata) return { ...metadata, insight: output };
+      if (output) return { insight: output, sources: [] };
+      return null;
+  }, [output, metadata]);
 
   return { 
     output, 
     metadata: derivedMetadata, 
-    debug,
+    debug, 
     trigger, 
-    isLoading, 
     isStreaming,
     abort,
     reset
   };
 };
+
+import { useEffect, useMemo } from 'react';
