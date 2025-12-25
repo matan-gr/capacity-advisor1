@@ -1,0 +1,10 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--build-arg', 'API_KEY=${_API_KEY}',
+      '-t', 'gcr.io/$PROJECT_ID/spot-advisor',
+      '.'
+    ]
+images:
+  - 'gcr.io/$PROJECT_ID/spot-advisor'
