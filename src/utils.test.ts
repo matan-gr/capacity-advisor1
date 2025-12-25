@@ -6,7 +6,7 @@ declare var global: any;
 declare var jest: any;
 
 import { getFriendlyErrorMessage, buildCapacityAdvisorRequest } from './utils';
-import { AppState, TargetShape, ProvisioningModel } from './types';
+import { AppState, TargetShape, ProvisioningModel, Recommendation, Score } from './types';
 import { generateMockRecommendationsWithShape, getNuancedSimulationMetrics } from './services/simulationEngine';
 import { MACHINE_TYPES } from './config';
 import { fetchAllZonesCapacity } from './services/apiService';
@@ -114,7 +114,7 @@ describe('Unit Test Suite', () => {
 
     it('ensures recommendations are sorted by obtainability (Logic Check)', () => {
       const response = generateMockRecommendationsWithShape('us-central1', 'e2-medium', mockMachineDetails, 50, TargetShape.ANY);
-      const scores = response.recommendations.map(r => r.scores.find(s => s.name === 'obtainability')?.value || 0);
+      const scores = response.recommendations.map((r: Recommendation) => r.scores.find((s: Score) => s.name === 'obtainability')?.value || 0);
       
       // Check if sorted descending
       for (let i = 0; i < scores.length - 1; i++) {
