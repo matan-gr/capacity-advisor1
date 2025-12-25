@@ -30,6 +30,7 @@ spot-capacity-advisor/
 │   ├── index.tsx         # Entry Point
 │   ├── styles.css        # Tailwind Directives
 │   ├── types.ts          # TypeScript Interfaces
+│   ├── utils.test.ts     # Unit Tests
 │   ├── utils.ts          # Shared Utilities
 │   └── vite-env.d.ts     # Type Definitions
 ├── deploy.md             # This Documentation
@@ -40,10 +41,12 @@ spot-capacity-advisor/
 ├── tailwind.config.js    # Tailwind Config
 ├── tsconfig.json         # TypeScript Config
 ├── vite.config.ts        # Vite Build Configuration
+├── PROJECT_HISTORY.md    # Change Log
+├── TESTING.md            # Testing Guide
 ├── .dockerignore         # Docker Ignore Rules
 ├── .gitignore            # Git Ignore Rules
-├── Dockerfile            # Container Definition (Create Manually below)
-└── nginx.conf            # Web Server Config (Create Manually below)
+├── Dockerfile            # Container Definition
+└── nginx.conf            # Web Server Config
 ```
 
 ---
