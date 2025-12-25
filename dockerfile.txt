@@ -1,16 +1,15 @@
 # Stage 1: Build the Application
-# Using Node 20 to satisfy @google/genai SDK requirements
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package definition
+# Copy package definition first for caching
 COPY package.json package-lock.json* ./
 
-# Update npm to latest version (optional, suppresses version warnings)
+# Update npm to latest version
 RUN npm install -g npm@latest
 
-# Install dependencies (including devDependencies for build tools like tsc and vite)
+# Install dependencies
 RUN npm install
 
 # Copy all source code
@@ -20,13 +19,13 @@ COPY . .
 ARG API_KEY
 ENV VITE_API_KEY=$API_KEY
 
-# Build (Output goes to /app/dist based on vite.config.ts)
+# Build
 RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Copy built assets
+# Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy custom Nginx config
