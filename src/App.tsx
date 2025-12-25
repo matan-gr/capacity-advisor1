@@ -1,13 +1,13 @@
 import React, { Suspense } from 'react';
-import { Icons } from './constants';
-import { useCapacityLogic } from './hooks/useCapacityLogic';
-import Header from './components/Header';
-import ConfigurationPanel from './components/ConfigurationPanel';
-import ResultsDashboard from './components/ResultsDashboard';
-import ToastContainer from './components/Toast';
+import { Icons } from 'src/constants';
+import { useCapacityLogic } from 'src/hooks/useCapacityLogic';
+import Header from 'src/components/Header';
+import ConfigurationPanel from 'src/components/ConfigurationPanel';
+import ResultsDashboard from 'src/components/ResultsDashboard';
+import ToastContainer from 'src/components/Toast';
 
 // Lazy load the debug console for better performance (Code Splitting)
-const DebugConsole = React.lazy(() => import('./components/DebugConsole'));
+const DebugConsole = React.lazy(() => import('src/components/DebugConsole'));
 
 /**
  * Main Application Shell

@@ -5,11 +5,11 @@ declare var expect: any;
 declare var global: any;
 declare var jest: any;
 
-import { getFriendlyErrorMessage, buildCapacityAdvisorRequest } from './utils';
-import { AppState, TargetShape, ProvisioningModel, Recommendation, Score } from './types';
-import { generateMockRecommendationsWithShape, getNuancedSimulationMetrics } from './services/simulationEngine';
-import { MACHINE_TYPES } from './config';
-import { fetchAllZonesCapacity } from './services/apiService';
+import { getFriendlyErrorMessage, buildCapacityAdvisorRequest } from 'src/utils';
+import { AppState, TargetShape, ProvisioningModel, Recommendation, Score } from 'src/types';
+import { generateMockRecommendationsWithShape, getNuancedSimulationMetrics } from 'src/services/simulationEngine';
+import { MACHINE_TYPES } from 'src/config';
+import { fetchAllZonesCapacity } from 'src/services/apiService';
 
 // Mock minimal state for testing
 const mockState: AppState = {
