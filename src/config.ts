@@ -158,7 +158,7 @@ export const generateMachineTypes = (
 
 /* --- GENERAL PURPOSE --- */
 
-// E2 (Cost Optimized) - x86
+// E2 (Cost Optimized) - x86 (Intel/AMD)
 const E2_SHARED = [
     { id: 'e2-micro', name: 'E2 Micro', family: 'General Purpose', series: 'E2', cores: 2, memory: '1GB', arch: 'x86' },
     { id: 'e2-small', name: 'E2 Small', family: 'General Purpose', series: 'E2', cores: 2, memory: '2GB', arch: 'x86' },
@@ -169,6 +169,13 @@ const E2_GENERATED = generateMachineTypes('E2', 'General Purpose', 'x86', [
     { suffix: 'standard', cores: [2, 4, 8, 16, 32], memPerCore: 4 },
     { suffix: 'highmem', cores: [2, 4, 8, 16], memPerCore: 8 },
     { suffix: 'highcpu', cores: [2, 4, 8, 16, 32], memPerCore: 1 },
+]);
+
+// N1 (First Gen) - x86 (Intel Skylake/Haswell/Broadwell)
+const N1_GENERATED = generateMachineTypes('N1', 'General Purpose', 'x86', [
+    { suffix: 'standard', cores: [1, 2, 4, 8, 16, 32, 64, 96], memPerCore: 3.75 },
+    { suffix: 'highmem', cores: [2, 4, 8, 16, 32, 64, 96], memPerCore: 6.5 },
+    { suffix: 'highcpu', cores: [2, 4, 8, 16, 32, 64, 96], memPerCore: 0.9 },
 ]);
 
 // N2 (Intel Cascade/Ice Lake) - x86
@@ -273,6 +280,7 @@ const A2_TYPES = [
 const A3_TYPES = [
     { id: 'a3-highgpu-8g', name: 'A3 HighGPU 8g', family: 'Accelerator Optimized', series: 'A3', cores: 208, memory: '1872GB', arch: 'x86' },
     { id: 'a3-megagpu-8g', name: 'A3 MegaGPU 8g', family: 'Accelerator Optimized', series: 'A3', cores: 208, memory: '1872GB', arch: 'x86' },
+    { id: 'a3-edgegpu-8g', name: 'A3 EdgeGPU 8g', family: 'Accelerator Optimized', series: 'A3', cores: 208, memory: '1872GB', arch: 'x86' },
 ] as MachineTypeOption[];
 
 // G2 (NVIDIA L4)
@@ -313,6 +321,7 @@ const Z3_GENERATED = generateMachineTypes('Z3', 'Storage Optimized', 'x86', [
 // Comprehensive list of modern GCP Machine Types for Mock Mode
 export const MACHINE_TYPES: MachineTypeOption[] = [
     ...E2_SHARED, ...E2_GENERATED,
+    ...N1_GENERATED,
     ...N2_GENERATED, ...N2D_GENERATED,
     ...N4_GENERATED,
     ...C2_GENERATED, ...C2D_GENERATED,

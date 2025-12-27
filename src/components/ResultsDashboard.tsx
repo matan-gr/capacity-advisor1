@@ -36,7 +36,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ state, onExport, on
   // Idle State (No Result, No Loading, No Grounding)
   if (!state.result && !state.loading && !state.groundingLoading && !state.groundingMetadata) return null;
 
-  const topScore = state.result?.recommendations[0]?.scores.find(s => s.name === 'obtainability')?.value || 0;
+  const topScore = state.result?.recommendations?.[0]?.scores?.find(s => s.name === 'obtainability')?.value || 0;
 
   return (
     <div className="animate-enter space-y-6">
@@ -66,12 +66,12 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ state, onExport, on
                   <div className="w-px bg-slate-200 dark:bg-slate-700 my-1"></div>
                   <button 
                     disabled={!state.result || state.loading || state.groundingLoading} 
-                    onClick={() => onExport('csv')} 
+                    onClick={() => onExport('html')} 
                     className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-                    title="Export as CSV"
+                    title="Export as HTML"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    CSV
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                    HTML
                   </button>
               </div>
 

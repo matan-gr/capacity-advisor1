@@ -125,18 +125,6 @@ export const useCapacityLogic = () => {
   } = useStreamAI();
 
   // --- Helpers ---
-  const updateState = useCallback((updates: Partial<AppState>) => {
-    setState(prev => {
-        const newErrors = { ...prev.validationErrors };
-        if (updates.project) delete newErrors.project;
-        if (updates.region) delete newErrors.region;
-        if (updates.selectedMachineType) delete newErrors.machineType;
-        if (updates.accessToken) delete newErrors.accessToken;
-        
-        return { ...prev, ...updates, validationErrors: newErrors };
-    });
-  }, []);
-
   const addLog = useCallback((level: LogEntry['level'], message: string) => {
     setState(prev => ({
       ...prev,
@@ -172,6 +160,41 @@ export const useCapacityLogic = () => {
       setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== id) }));
   }, []);
 
+  const updateState = useCallback((updates: Partial<AppState>) => {
+    // Check for config change
+    const configKeys: (keyof AppState)[] = ['project', 'region', 'selectedMachineType', 'size', 'targetShape', 'mockMode'];
+    const isConfigChange = configKeys.some(key => key in updates && updates[key] !== state[key]);
+
+    if (state.result && isConfigChange) {
+        resetStream();
+        addToast(
+            'info',
+            'Configuration Updated',
+            'Previous results have been cleared to ensure accuracy. Please re-run the analysis with your new settings.',
+            5000
+        );
+    }
+
+    setState(prev => {
+        const newErrors = { ...prev.validationErrors };
+        if (updates.project) delete newErrors.project;
+        if (updates.region) delete newErrors.region;
+        if (updates.selectedMachineType) delete newErrors.machineType;
+        if (updates.accessToken) delete newErrors.accessToken;
+        
+        let nextState = { ...prev, ...updates, validationErrors: newErrors };
+
+        if (prev.result && isConfigChange) {
+             nextState.result = null;
+             nextState.error = null;
+             nextState.groundingMetadata = null;
+             nextState.debugData = { ...prev.debugData, status: 'idle' };
+        }
+        
+        return nextState;
+    });
+  }, [state, resetStream, addToast]);
+
   // --- Effects ---
 
   // Check Data Freshness (Stale Data Alert - 2 Minutes)
@@ -184,8 +207,8 @@ export const useCapacityLogic = () => {
       if (elapsed > STALE_THRESHOLD && !staleToastShownRef.current) {
          addToast(
              'warning', 
-             'Data Freshness Notice', 
-             'Results are over 2 minutes old. Refresh your analysis to ensure accuracy.',
+             'Data Freshness Alert', 
+             'The displayed capacity data is over 2 minutes old. We recommend refreshing the analysis for the most accurate availability.',
              60000
          );
          staleToastShownRef.current = true;
@@ -335,7 +358,7 @@ export const useCapacityLogic = () => {
        }
        abortStream();
        addLog('warn', 'Operation cancelled by user.');
-       addToast('info', 'Analysis Cancelled', 'The capacity check was manually stopped.');
+       addToast('info', 'Operation Cancelled', 'The capacity analysis was manually terminated by the user.');
        updateState({ loading: false, groundingLoading: false });
        return;
     }
@@ -346,27 +369,28 @@ export const useCapacityLogic = () => {
 
     if (!state.selectedMachineType || state.selectedMachineType.trim() === '') {
         errors.machineType = true;
-        addToast('error', 'Missing Machine Type', 'Please select a specific Machine Type.');
+        addToast('error', 'Configuration Incomplete', 'Please select a specific Machine Type to proceed.');
         hasError = true;
     }
 
     if (!state.region || state.region.trim() === '') {
         errors.region = true;
-        addToast('error', 'Missing Region', 'A Target Region must be selected.');
+        addToast('error', 'Configuration Incomplete', 'A Target Region must be selected.');
+        hasError = true;
+    }
+
+    // Project ID is now required in ALL modes
+    if (!state.project || state.project.trim() === '') {
+        errors.project = true;
+        addToast('error', 'Configuration Incomplete', 'A valid Google Cloud Project ID is required.');
+        hasError = true;
+    } else if (!PROJECT_ID_REGEX.test(state.project)) {
+        errors.project = true;
+        addToast('error', 'Invalid Project ID', 'Project ID must consist of lowercase letters, digits, and hyphens.');
         hasError = true;
     }
 
     if (!state.mockMode) {
-        if (!state.project || state.project.trim() === '') {
-            errors.project = true;
-            addToast('error', 'Missing Project ID', 'Project ID required for Live API.');
-            hasError = true;
-        } else if (!PROJECT_ID_REGEX.test(state.project)) {
-            errors.project = true;
-            addToast('error', 'Invalid Project ID', 'Format: lowercase, digits, hyphens.');
-            hasError = true;
-        }
-        
         // Strict Token Check for Live Mode
         if (!state.accessToken || state.accessToken.trim() === '') {
              errors.accessToken = true;
@@ -376,7 +400,7 @@ export const useCapacityLogic = () => {
                  message: "Live API mode requires a Google Cloud Access Token.",
                  actionable: "Run 'gcloud auth print-access-token' and paste it in the box."
              });
-             addToast('error', 'Missing Access Token', 'Please provide a valid token to query real GCP data.');
+             addToast('error', 'Authentication Missing', 'Please provide a valid Access Token to query live Google Cloud data.');
              updateState({ error: getFriendlyErrorMessage(401, tokenError) });
              hasError = true;
         }
@@ -485,7 +509,7 @@ export const useCapacityLogic = () => {
         debugData: { ...prev.debugData, response, endTime: new Date().toISOString(), status: 'completed' }
       }));
       
-      addToast('success', 'Analysis Complete', `Found ${response.recommendations.length} optimization options.`);
+      addToast('success', 'Analysis Successful', `Capacity assessment complete. Identified ${response.recommendations.length} viable placement options.`);
 
     } catch (error: any) {
       if (error.name === 'AbortError') return;
@@ -495,7 +519,7 @@ export const useCapacityLogic = () => {
       addLog('error', friendlyMsg);
       const isAuth = friendlyMsg.includes('Auth') || friendlyMsg.includes('Access');
       const isQuota = friendlyMsg.includes('Quota');
-      const toastTitle = isAuth ? 'Authentication Error' : isQuota ? 'Quota Exceeded' : 'Analysis Failed';
+      const toastTitle = isAuth ? 'Authentication Failed' : isQuota ? 'Quota Limit Reached' : 'Analysis Failed';
 
       addToast('error', toastTitle, friendlyMsg);
 
@@ -509,16 +533,46 @@ export const useCapacityLogic = () => {
   };
 
   const toggleFamily = useCallback((family: string) => {
+    if (state.result) {
+        resetStream();
+        addToast(
+            'info',
+            'Filter Changed',
+            'Machine family filter updated. Previous results cleared to reflect new criteria.',
+            5000
+        );
+    }
+
     setState(prev => {
         let newFamilies = [...prev.selectedFamilies];
-        if (family === 'All') return { ...prev, selectedFamilies: ['All'], selectedMachineType: '' };
+        const shouldReset = !!prev.result;
+
+        if (family === 'All') {
+            return { 
+                ...prev, 
+                selectedFamilies: ['All'], 
+                selectedMachineType: '',
+                result: shouldReset ? null : prev.result,
+                error: shouldReset ? null : prev.error,
+                groundingMetadata: shouldReset ? null : prev.groundingMetadata
+            };
+        }
+
         newFamilies = newFamilies.filter(f => f !== 'All');
         if (newFamilies.includes(family)) newFamilies = newFamilies.filter(f => f !== family);
         else newFamilies.push(family);
         if (newFamilies.length === 0) newFamilies = ['All'];
-        return { ...prev, selectedFamilies: newFamilies, selectedMachineType: '' };
+        
+        return { 
+            ...prev, 
+            selectedFamilies: newFamilies, 
+            selectedMachineType: '',
+            result: shouldReset ? null : prev.result,
+            error: shouldReset ? null : prev.error,
+            groundingMetadata: shouldReset ? null : prev.groundingMetadata
+        };
     });
-  }, []);
+  }, [state.result, resetStream]);
 
   const handleExport = useCallback((type: 'csv' | 'html' | 'pdf') => {
     if (!state.result) return;
@@ -552,7 +606,7 @@ export const useCapacityLogic = () => {
           loading: false,
           groundingLoading: false
       }));
-      addToast('info', 'Dashboard Reset', 'Results cleared. Ready for new analysis.');
+      addToast('info', 'Workspace Reset', 'All data has been cleared. You are ready to configure a new analysis.');
   }, [resetStream, addToast]);
 
   const filteredMachineTypes = useMemo(() => {

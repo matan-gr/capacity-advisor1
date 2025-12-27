@@ -153,7 +153,7 @@ const ZoneDistributionChart: React.FC<ZoneDistributionChartProps> = React.memo((
       </div>
 
       {/* Chart Area */}
-      <div className="flex-grow w-full min-h-[250px] p-4 relative">
+      <div className="w-full h-[300px] p-4 relative">
         <ResponsiveContainer width="100%" height="100%">
             {mode === 'compare' ? (
                 <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>

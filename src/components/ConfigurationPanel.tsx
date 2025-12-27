@@ -54,14 +54,15 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
 
   const projectRegex = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
   const isValidProject = !state.project || projectRegex.test(state.project);
-  const showValidation = !state.mockMode && state.project.length > 0;
+  // Show validation if project is not empty OR if there's a validation error
+  const showValidation = (state.project.length > 0) || !!state.validationErrors?.project;
   
   // Region Validation
   const selectedRegionZones = state.region ? regionConfig[state.region] : [];
   const hasZones = !state.mockMode && !!state.region && selectedRegionZones && selectedRegionZones.length > 0;
   const showRegionError = !state.mockMode && !!state.region && !isFetchingRegions && (!selectedRegionZones || selectedRegionZones.length === 0);
 
-  const isSearchDisabled = state.loading || (!state.mockMode && (!isValidProject || showRegionError));
+  const isSearchDisabled = state.loading || (!isValidProject && state.project.length > 0) || showRegionError;
 
   const shapeOptions = [
     { 
@@ -246,13 +247,20 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                           <div className="w-1/2 group relative z-10">
                               <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 ml-1">Count</label>
                               <div className="relative">
-                                <input 
-                                  type="number" 
-                                  min="1"
-                                  value={state.size}
-                                  onChange={(e) => updateState({ size: parseInt(e.target.value) || 1 })}
-                                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm text-slate-900 dark:text-white"
-                                />
+                                  <input 
+                                    type="number" 
+                                    min="1"
+                                    max="9999"
+                                    value={state.size}
+                                    onChange={(e) => {
+                                        let val = parseInt(e.target.value);
+                                        if (isNaN(val)) val = 1;
+                                        if (val > 9999) val = 9999;
+                                        if (val < 1) val = 1;
+                                        updateState({ size: val });
+                                    }}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm text-slate-900 dark:text-white"
+                                  />
                               </div>
                           </div>
                           

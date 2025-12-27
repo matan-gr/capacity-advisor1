@@ -171,6 +171,19 @@ We employ a custom hook acting as a Controller.
 
 ## 7. Change Log
 
+### v2.16.0 (Feature Expansion & Hardening)
+*   **New Features:**
+    *   **Advanced Charts:** Integrated `Recharts` for sophisticated data visualization (Composed Charts for comparison, Pie Charts for distribution).
+    *   **Battlecard:** Added "Alternatives Battlecard" to Gemini AI prompt for constrained capacity scenarios.
+    *   **HTML Export:** Added option to export reports as formatted HTML.
+    *   **Smart Reset:** Implemented auto-reset logic when workload configuration changes to ensure data consistency.
+    *   **Toast Notifications:** Enhanced notification system with professional, actionable messages for state changes and errors.
+*   **Improvements:**
+    *   **Validation:** Enforced 9999 VM limit and mandatory Project ID in all modes. Added visual error highlighting.
+    *   **Error Handling:** Robust handling for Gemini 429/503 errors and email button crash fix.
+    *   **Infrastructure:** Updated to **Node 22** and latest **Alpine Linux** for deployment.
+    *   **Cleanup:** Removed email sharing feature and unused assets.
+
 ### v2.15.2 (Infrastructure & UX Refinement)
 *   **Infrastructure:** Refactored project structure to standard `src/` layout. Updated Docker build process with explicit TypeScript inclusion and npm updates.
 *   **Build Stability:** Fixed `tsconfig.json` module resolution and `vite-env.d.ts` to resolve build-time module errors.

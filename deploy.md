@@ -60,8 +60,8 @@ Create a file named `Dockerfile` (no extension).
 
 ```dockerfile
 # Stage 1: Build the Application
-# Using Node 20 to satisfy @google/genai SDK requirements
-FROM node:20-alpine AS builder
+# Using Node 22 (Latest Stable) on Alpine Linux
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
