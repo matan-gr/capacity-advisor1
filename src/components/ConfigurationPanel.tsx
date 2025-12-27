@@ -18,6 +18,7 @@ interface ConfigurationPanelProps {
   isFetchingRegions: boolean;
   isFetchingMachineTypes: boolean;
   onSearch: () => void;
+  regionConfig: Record<string, string[]>;
 }
 
 const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
@@ -29,9 +30,11 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
   toggleFamily,
   isFetchingRegions,
   isFetchingMachineTypes,
-  onSearch
+  onSearch,
+  regionConfig
 }) => {
   const [isShapeOpen, setIsShapeOpen] = useState(false);
+  const [dismissedProjectError, setDismissedProjectError] = useState(false);
   const shapeDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,11 +47,21 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Reset dismissed error when project changes
+  useEffect(() => {
+    setDismissedProjectError(false);
+  }, [state.project]);
+
   const projectRegex = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
   const isValidProject = !state.project || projectRegex.test(state.project);
   const showValidation = !state.mockMode && state.project.length > 0;
   
-  const isSearchDisabled = state.loading || (!state.mockMode && !isValidProject);
+  // Region Validation
+  const selectedRegionZones = state.region ? regionConfig[state.region] : [];
+  const hasZones = !state.mockMode && !!state.region && selectedRegionZones && selectedRegionZones.length > 0;
+  const showRegionError = !state.mockMode && !!state.region && !isFetchingRegions && (!selectedRegionZones || selectedRegionZones.length === 0);
+
+  const isSearchDisabled = state.loading || (!state.mockMode && (!isValidProject || showRegionError));
 
   const shapeOptions = [
     { 
@@ -81,7 +94,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
          initial={{ opacity: 0, y: 10 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ duration: 0.4 }}
-         className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 relative"
+         className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 md:p-6 relative"
        >
            <div className="relative z-10">
                <div className="flex justify-between items-center mb-6">
@@ -105,9 +118,9 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                                 className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600
                                     ${showValidation 
                                         ? isValidProject 
-                                            ? 'border-emerald-500/50 focus:border-emerald-500' 
+                                            ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500' 
                                             : 'border-red-500 focus:border-red-500 bg-red-50/10'
-                                        : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                                        : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-slate-300 dark:hover:border-slate-700'
                                     }
                                 `}
                                 placeholder="gcp-project-id"
@@ -122,6 +135,33 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                                 </div>
                             )}
                           </div>
+                          {/* Project ID Error Message */}
+                          <AnimatePresence>
+                            {showValidation && !isValidProject && !dismissedProjectError && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="mt-2 flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-lg p-2"
+                                >
+                                    <div className="text-red-500 shrink-0 mt-0.5"><Icons.Info size={12} /></div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-red-600 dark:text-red-300 font-medium leading-tight">
+                                            Invalid Project ID format.
+                                        </p>
+                                        <p className="text-[9px] text-red-500 dark:text-red-400 mt-0.5 leading-tight">
+                                            Must be 6-30 chars, lowercase, digits, or hyphens.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setDismissedProjectError(true)}
+                                        className="text-red-400 hover:text-red-600 dark:hover:text-red-200 transition-colors"
+                                    >
+                                        <Icons.Cancel size={12} />
+                                    </button>
+                                </motion.div>
+                            )}
+                          </AnimatePresence>
                        </div>
                        
                        <div className="mb-2">
@@ -175,6 +215,27 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                                 placeholder="Search region..."
                                 isLoading={isFetchingRegions}
                            />
+                           {/* Region Error Message */}
+                           <AnimatePresence>
+                               {showRegionError && (
+                                   <motion.div
+                                       initial={{ opacity: 0, y: -5 }}
+                                       animate={{ opacity: 1, y: 0 }}
+                                       exit={{ opacity: 0, y: -5 }}
+                                       className="absolute top-full left-0 right-0 mt-2 z-50 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 shadow-lg"
+                                   >
+                                       <div className="flex items-start gap-2">
+                                           <div className="text-amber-500 shrink-0 mt-0.5"><Icons.Info size={14} /></div>
+                                           <div>
+                                               <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide">No Zones Found</p>
+                                               <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 leading-relaxed">
+                                                   The selected region <strong>{state.region}</strong> does not appear to have any active zones available for your project. Please select a different region.
+                                               </p>
+                                           </div>
+                                       </div>
+                                   </motion.div>
+                               )}
+                           </AnimatePresence>
                        </div>
                        
                        <div className="flex gap-4">
@@ -309,7 +370,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                     ? 'bg-red-500/90 border border-red-500 text-white shadow-lg shadow-red-500/20' 
                     : isSearchDisabled
                         ? 'bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                        : 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-sm hover:shadow-[0_0_20px_-5px_rgba(99,102,241,0.4)] hover:border-indigo-500 dark:hover:border-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 dark:shadow-indigo-900/50'
               }`}
            >
               {/* Refined Shimmer Effect - Slower, subtler */}

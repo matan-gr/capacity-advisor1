@@ -1,6 +1,6 @@
 
-import { useState, useCallback, useRef } from 'react';
-import { streamGeminiInsight } from '../services/geminiService';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { streamGroundingInsights } from '../services/geminiService';
 import { AppState, GroundingMetadata } from '../types';
 import { MachineTypeOption } from '../config';
 
@@ -19,21 +19,25 @@ export const useStreamAI = () => {
     setMetadata(null);
     setDebug(null);
 
-    await streamGeminiInsight(
-      state,
-      machineDetails,
-      (text) => {
-        if (isMounted.current) setOutput(text);
-      },
-      (meta) => {
-        if (isMounted.current) setMetadata(meta);
-      },
-      (dbg) => {
-        if (isMounted.current) setDebug(dbg);
-      }
-    );
+    try {
+      const stream = streamGroundingInsights(state, machineDetails);
 
-    if (isMounted.current) setIsStreaming(false);
+      for await (const chunk of stream) {
+        if (!isMounted.current) break;
+
+        if (chunk.type === 'text') {
+          setOutput(prev => prev + chunk.content);
+        } else if (chunk.type === 'metadata') {
+          setMetadata(chunk.content);
+        } else if (chunk.type === 'debug') {
+          setDebug(chunk.content);
+        }
+      }
+    } catch (error) {
+      console.error("Stream error:", error);
+    } finally {
+      if (isMounted.current) setIsStreaming(false);
+    }
   }, []);
 
   const reset = useCallback(() => {
@@ -50,12 +54,25 @@ export const useStreamAI = () => {
 
   // Cleanup
   useEffect(() => {
+      isMounted.current = true;
       return () => { isMounted.current = false; };
   }, []);
 
   // Memoize the derived metadata to prevent infinite loops in consumers
   const derivedMetadata = useMemo(() => {
-      if (metadata) return { ...metadata, insight: output };
+      if (metadata) {
+          // Map raw Gemini metadata to our app's structure
+          // The raw metadata from the SDK typically contains 'groundingChunks'
+          const rawChunks = (metadata as any).groundingChunks || [];
+          const sources = rawChunks
+              .filter((c: any) => c.web)
+              .map((c: any) => ({ title: c.web.title, uri: c.web.uri }));
+
+          return { 
+              insight: output, 
+              sources: sources 
+          };
+      }
       if (output) return { insight: output, sources: [] };
       return null;
   }, [output, metadata]);
@@ -70,5 +87,3 @@ export const useStreamAI = () => {
     reset
   };
 };
-
-import { useEffect, useMemo } from 'react';

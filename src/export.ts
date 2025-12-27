@@ -113,7 +113,7 @@ export const generateHTML = (data: CapacityAdvisorResponse, state: AppState, gro
 const cleanMarkdownForPDF = (text: string): string => {
   if (!text) return '';
 
-  return text
+  let cleaned = text
     // 1. Remove Emojis (Ranges for various emoji blocks)
     .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Symbols & Pictographs
@@ -125,20 +125,24 @@ const cleanMarkdownForPDF = (text: string): string => {
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
-    // 3. Format Headers (convert ### Header to CAPS)
-    .replace(/^###\s+(.+)$/gm, '\n$1\n----------------------------------------')
-    .replace(/^##\s+(.+)$/gm, '\n$1\n========================================')
-    // 4. Format Lists
-    .replace(/^\s*[\-\*]\s+/gm, '  • ')
-    // 5. Remove Bold/Italic Markdown
+    // 3. Remove Bold/Italic/Code Markdown
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
     .replace(/`(.*?)`/g, '$1')
-    // 6. Flatten Tables (simple approach: replace pipes with spaces)
-    .replace(/\|/g, '  ')
-    // 7. Remove Blockquote chars
-    .replace(/^>\s?/gm, '')
+    // 4. Format Headers (convert ### Header to Uppercase with spacing)
+    .replace(/^###\s+(.+)$/gm, '\n\n$1\n----------------------------------------')
+    .replace(/^##\s+(.+)$/gm, '\n\n$1\n========================================')
+    // 5. Format Lists
+    .replace(/^\s*[\-\*]\s+/gm, '  • ')
+    // 6. Format Blockquotes
+    .replace(/^>\s?/gm, '  | ')
+    // 7. Flatten Tables (replace pipes with spaces, remove outer pipes)
+    .replace(/^\|/gm, '')
+    .replace(/\|$/gm, '')
+    .replace(/\|/g, '   ')
     .trim();
+
+  return cleaned;
 };
 
 export const generatePDF = (data: CapacityAdvisorResponse, state: AppState, groundingData: GroundingMetadata | null) => {
@@ -219,19 +223,50 @@ export const generatePDF = (data: CapacityAdvisorResponse, state: AppState, grou
       doc.text('Advisor Insights', 14, finalY);
       finalY += 10;
 
+      // --- TL;DR Extraction & Rendering ---
+      const tldrMatch = groundingData.insight.match(/### ⚡ TL;DR Summary\n([\s\S]*?)(?=###|$)/);
+      let mainText = groundingData.insight;
+
+      if (tldrMatch) {
+          const tldrText = cleanMarkdownForPDF(tldrMatch[1]);
+          mainText = mainText.replace(tldrMatch[0], ''); // Remove TL;DR from main text
+
+          // Render TL;DR Box
+          doc.setFillColor(240, 253, 244); // Light green bg
+          doc.setDrawColor(22, 163, 74); // Green border
+          doc.roundedRect(14, finalY, 180, 25, 2, 2, 'FD');
+          
+          doc.setFontSize(10);
+          doc.setTextColor(21, 128, 61); // Green text
+          doc.setFont('helvetica', 'bold');
+          doc.text("EXECUTIVE SUMMARY", 20, finalY + 8);
+          
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0);
+          const splitTldr = doc.splitTextToSize(tldrText, 170);
+          doc.text(splitTldr, 20, finalY + 16);
+          
+          finalY += 35;
+      }
+
+      // --- Main Insight Rendering ---
       doc.setFontSize(10);
       doc.setTextColor(50);
-      doc.setFont('courier', 'normal'); // Use courier for better alignment of clean text
+      doc.setFont('courier', 'normal'); // Monospace for alignment
       
-      const cleanText = cleanMarkdownForPDF(groundingData.insight);
+      const cleanText = cleanMarkdownForPDF(mainText);
       const splitText = doc.splitTextToSize(cleanText, 180);
       
       // Pagination for text
-      let lineHeight = 5;
+      const lineHeight = 5;
       for (let i = 0; i < splitText.length; i++) {
         if (finalY > 280) {
           doc.addPage();
           finalY = 20;
+        }
+        // Check if line looks like a header (from our cleaner)
+        if (splitText[i].includes('----') || splitText[i].includes('====')) {
+            finalY += 2; // Extra space before separator
         }
         doc.text(splitText[i], 14, finalY);
         finalY += lineHeight;

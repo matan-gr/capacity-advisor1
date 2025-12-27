@@ -12,7 +12,7 @@ export async function* streamGroundingInsights(
   state: AppState,
   machineSpecs: MachineTypeOption | undefined
 ): AsyncGenerator<StreamChunk, void, unknown> {
-  // Use the stable Flash model as 'gemini-3-flash' is not a valid model identifier in this environment.
+  // Using 'gemini-2.5-flash' as the stable Flash model.
   const modelName = 'gemini-2.5-flash';
   
   const today = new Date();
@@ -41,9 +41,9 @@ Your mandate is to validate the user's capacity request against real-world const
 ### REAL-TIME CONTEXT
 - **Current Time:** ${dateString} ${timeString}
 - **Request:** ${state.size} instances of **${state.selectedMachineType}** in **${state.region}**.
+- **Deployment Type:** ${state.targetShape} (Affects distribution strategy).
 - **Hardware Specs:** ${vCPUsPerVM} vCPU / ${memoryPerVM} RAM per VM (${family}).
 - **Total Quota Impact:** This request consumes **${totalVCPUs} vCPUs** of Spot Quota.
-- **Target Shape:** ${state.targetShape}
 
 ### RESPONSE FORMATTING RULES (STRICT MARKDOWN)
 - **Tables:** Must start and end with pipes (|).
@@ -92,10 +92,11 @@ Your mandate is to validate the user's capacity request against real-world const
   // Yield debug info first
   yield { type: 'debug', content: { prompt, model: modelName } };
 
-  const apiKey = process.env.API_KEY;
+  // Robustly retrieve API Key (Support both Vite env and standard process.env)
+  const apiKey = import.meta.env.VITE_API_KEY || (typeof process !== 'undefined' ? process.env.API_KEY : undefined);
 
   if (!apiKey) {
-      yield { type: 'text', content: "Configuration Error: API Key is missing. Please ensure process.env.API_KEY is set." };
+      yield { type: 'text', content: "Configuration Error: API Key is missing. Please ensure VITE_API_KEY or process.env.API_KEY is set." };
       return;
   }
 

@@ -23,14 +23,14 @@ const ScoreGauge = React.memo(({ score, label, description, delay = 0 }: ScoreGa
   const percentage = Math.round(score * 100);
   
   const tier = useMemo(() => {
-    if (score < 0.4) {
+      if (score < 0.4) {
       return {
         label: 'Critical Scarcity',
         id: 'critical',
-        colors: ['#ef4444', '#b91c1c'], 
-        bg: 'bg-red-50 dark:bg-red-950/30',
-        text: 'text-red-700 dark:text-red-300',
-        borderColor: 'border-red-100 dark:border-red-900/50',
+        colors: ['#ef4444', '#dc2626'], // More vibrant red
+        bg: 'bg-red-50 dark:bg-red-950/40',
+        text: 'text-red-700 dark:text-red-200',
+        borderColor: 'border-red-200 dark:border-red-900',
         desc: 'High contention. Preemption likely.',
         risk: 'High Risk',
         icon: <Icons.Cancel />
@@ -39,10 +39,10 @@ const ScoreGauge = React.memo(({ score, label, description, delay = 0 }: ScoreGa
       return {
         label: 'Constrained',
         id: 'constrained',
-        colors: ['#f59e0b', '#d97706'], 
-        bg: 'bg-amber-50 dark:bg-amber-950/30',
-        text: 'text-amber-700 dark:text-amber-300',
-        borderColor: 'border-amber-100 dark:border-amber-900/50',
+        colors: ['#f59e0b', '#d97706'], // Vibrant amber
+        bg: 'bg-amber-50 dark:bg-amber-950/40',
+        text: 'text-amber-700 dark:text-amber-200',
+        borderColor: 'border-amber-200 dark:border-amber-900',
         desc: 'Fluctuating capacity.',
         risk: 'Medium Risk',
         icon: <Icons.Alert />
@@ -51,10 +51,10 @@ const ScoreGauge = React.memo(({ score, label, description, delay = 0 }: ScoreGa
        return {
         label: 'Good Availability',
         id: 'good',
-        colors: ['#3b82f6', '#2563eb'], 
-        bg: 'bg-blue-50 dark:bg-blue-950/30',
-        text: 'text-blue-700 dark:text-blue-300',
-        borderColor: 'border-blue-100 dark:border-blue-900/50',
+        colors: ['#3b82f6', '#2563eb'], // Vibrant blue
+        bg: 'bg-blue-50 dark:bg-blue-950/40',
+        text: 'text-blue-700 dark:text-blue-200',
+        borderColor: 'border-blue-200 dark:border-blue-900',
         desc: 'Stable pool conditions.',
         risk: 'Low Risk',
         icon: <Icons.Check />
@@ -63,10 +63,10 @@ const ScoreGauge = React.memo(({ score, label, description, delay = 0 }: ScoreGa
     return {
       label: 'High Availability',
       id: 'excellent',
-      colors: ['#10b981', '#059669'],
-      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      borderColor: 'border-emerald-100 dark:border-emerald-900/50',
+      colors: ['#10b981', '#059669'], // Vibrant emerald
+      bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+      text: 'text-emerald-700 dark:text-emerald-200',
+      borderColor: 'border-emerald-200 dark:border-emerald-900',
       desc: 'Optimal candidate.',
       risk: 'Optimal',
       icon: <Icons.Check />

@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { DebugData } from '../types';
+import { DebugData, AppState } from '../types';
 import { Icons } from '../constants';
 
 interface DebugConsoleProps {
   data: DebugData;
+  state: AppState;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -53,8 +54,8 @@ const JsonNode = React.memo(({ value }: { value: any }) => {
   return <span className="text-slate-400">{String(value)}</span>;
 });
 
-const DebugConsole: React.FC<DebugConsoleProps> = ({ data, isOpen, onToggle }) => {
-  const [activeTab, setActiveTab] = useState<'summary' | 'request' | 'response' | 'gemini' | 'logs' | 'network'>('summary');
+const DebugConsole: React.FC<DebugConsoleProps> = ({ data, state, isOpen, onToggle }) => {
+  const [activeTab, setActiveTab] = useState<'summary' | 'state' | 'request' | 'response' | 'gemini' | 'logs' | 'network'>('summary');
   const [logFilter, setLogFilter] = useState('');
   const [expandedLogs, setExpandedLogs] = useState<number[]>([]);
   const [height, setHeight] = useState(400);
@@ -122,6 +123,26 @@ Language: ${navigator.language}
                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2">Environment Telemetry</h4>
                <pre className="text-[10px] text-indigo-300 font-mono-dense whitespace-pre-wrap">{sysInfo}</pre>
             </div>
+          </div>
+        );
+
+      case 'state':
+        return (
+          <div className="flex flex-col h-full bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+             <div className="bg-slate-800/50 px-4 py-2 border-b border-slate-800 flex justify-between items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Current App State</span>
+                <button 
+                    onClick={() => copyToClipboard(JSON.stringify(state, null, 2))}
+                    className="text-[9px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-0.5 rounded transition-colors"
+                >
+                    Copy JSON
+                </button>
+             </div>
+             <div className="p-4 overflow-auto custom-scrollbar flex-grow">
+                <div className="font-mono text-[11px]">
+                    <JsonNode value={state} />
+                </div>
+             </div>
           </div>
         );
 
@@ -348,8 +369,8 @@ Language: ${navigator.language}
       </div>
 
       {/* Header */}
-      <div className="bg-[#020617] px-4 py-2 flex items-center justify-between border-b border-slate-800 select-none pt-3">
-        <div className="flex items-center gap-4">
+      <div className="bg-[#020617] px-4 py-2 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-800 select-none pt-3 gap-3 md:gap-0">
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-2 text-slate-300">
              <Icons.Terminal />
              <span className="text-xs font-bold uppercase tracking-wider">DevOps Console</span>
@@ -361,10 +382,15 @@ Language: ${navigator.language}
           }`}>
             {data.status}
           </span>
+          {/* Mobile Close Button */}
+          <button onClick={onToggle} className="md:hidden text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1.5 rounded-lg hover:bg-slate-700 border border-slate-700/50">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" /></svg>
+          </button>
         </div>
-        <div className="flex items-center gap-4">
-            <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700/50">
-                {['summary', 'logs', 'request', 'response', 'gemini', 'network'].map((tab) => (
+        
+        <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+            <div className="flex bg-slate-800/50 rounded-lg p-0.5 border border-slate-700/50 whitespace-nowrap">
+                {['summary', 'state', 'logs', 'request', 'response', 'gemini', 'network'].map((tab) => (
                 <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
@@ -376,8 +402,8 @@ Language: ${navigator.language}
                 </button>
                 ))}
             </div>
-            <div className="h-4 w-px bg-slate-700 mx-1"></div>
-            <button onClick={onToggle} className="text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1.5 rounded-lg hover:bg-slate-700 border border-slate-700/50">
+            <div className="hidden md:block h-4 w-px bg-slate-700 mx-1"></div>
+            <button onClick={onToggle} className="hidden md:block text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1.5 rounded-lg hover:bg-slate-700 border border-slate-700/50">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" /></svg>
             </button>
         </div>

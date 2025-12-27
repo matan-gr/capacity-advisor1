@@ -30,20 +30,20 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
 
   // Consistent Color Logic
   let riskLabel = 'Optimal';
-  let riskColor = 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50';
+  let riskColor = 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
   let barColor = 'bg-emerald-500 dark:bg-emerald-400';
 
   if (obtainabilityScore < 0.4) {
     riskLabel = 'Critical';
-    riskColor = 'text-red-700 bg-red-50 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-900/50';
+    riskColor = 'text-red-700 bg-red-50 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800';
     barColor = 'bg-red-500 dark:bg-red-400';
   } else if (obtainabilityScore < 0.7) {
     riskLabel = 'Constrained';
-    riskColor = 'text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50';
+    riskColor = 'text-amber-700 bg-amber-50 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
     barColor = 'bg-amber-500 dark:bg-amber-400';
   } else if (obtainabilityScore < 0.85) {
     riskLabel = 'Good';
-    riskColor = 'text-blue-700 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50';
+    riskColor = 'text-blue-700 bg-blue-50 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
     barColor = 'bg-blue-500 dark:bg-blue-400';
   }
 
@@ -73,36 +73,56 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
     >
       <div 
         onClick={onToggle}
-        className={`grid grid-cols-12 gap-4 items-center py-4 px-6 cursor-pointer transition-colors ${isExpanded ? 'bg-slate-50 dark:bg-slate-800/60' : ''}`}
+        className={`flex flex-col md:grid md:grid-cols-12 gap-4 items-start md:items-center py-4 px-4 md:px-6 cursor-pointer transition-colors ${isExpanded ? 'bg-slate-50 dark:bg-slate-800/60' : ''}`}
       >
-        {/* Zone / Option */}
-        <div className="col-span-3 flex items-center gap-3">
-           <motion.div 
-             animate={{ rotate: isExpanded ? 90 : 0 }}
-             className={`w-5 h-5 rounded flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 ${isExpanded ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
-           >
-             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
-           </motion.div>
-           <div>
-             <div className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                {isMultiZone ? `Option ${index + 1}` : zoneLabel}
-             </div>
-             <div className="text-[9px] text-slate-400 dark:text-slate-500">
-                {isMultiZone ? 'Balanced Distribution' : primaryShard.machineType}
-             </div>
-           </div>
+        {/* Mobile Top Row: Zone + Badge + Count */}
+        <div className="w-full flex md:contents justify-between items-center mb-3 md:mb-0">
+            {/* Zone / Option */}
+            <div className="col-span-3 flex items-center gap-3">
+            <motion.div 
+                animate={{ rotate: isExpanded ? 90 : 0 }}
+                className={`w-5 h-5 rounded flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 ${isExpanded ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
+            >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+            </motion.div>
+            <div>
+                <div className="flex items-center gap-2">
+                    <div className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {isMultiZone ? `Option ${index + 1}` : zoneLabel}
+                    </div>
+                    {index === 0 && (
+                        <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            Recommended
+                        </span>
+                    )}
+                </div>
+                <div className="text-[9px] text-slate-400 dark:text-slate-500">
+                    {isMultiZone ? 'Balanced Distribution' : primaryShard.machineType}
+                </div>
+            </div>
+            </div>
+
+            {/* Mobile Only: Count & Badge (Right Aligned) */}
+            <div className="flex md:hidden items-center gap-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm ${riskColor}`}>
+                    {riskLabel}
+                </span>
+                <div className="font-mono text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 py-1 px-2 rounded">
+                    {totalCount}
+                </div>
+            </div>
         </div>
 
-        {/* Risk Badge */}
-        <div className="col-span-2">
+        {/* Desktop: Risk Badge */}
+        <div className="hidden md:block col-span-2">
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm ${riskColor}`}>
             {riskLabel}
           </span>
         </div>
 
-        {/* Progress Scores */}
-        <div className="col-span-5 pr-2">
-            <div className="grid grid-cols-2 gap-6">
+        {/* Progress Scores - Full width on mobile, col-span-5 on desktop */}
+        <div className="w-full md:col-span-5 md:pr-2 mt-2 md:mt-0">
+            <div className="grid grid-cols-2 gap-4 md:gap-6">
                 {/* Obtainability */}
                 <div>
                     <div className="flex justify-between items-end mb-1">
@@ -137,8 +157,8 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
             </div>
         </div>
 
-        {/* Count */}
-        <div className="col-span-2 text-right">
+        {/* Desktop: Count */}
+        <div className="hidden md:block col-span-2 text-right">
              <div className="font-mono text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 py-1 px-2 rounded inline-block">
                 {totalCount} VMs
              </div>
@@ -195,6 +215,7 @@ interface ZoneComparisonChartProps {
 }
 
 const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = React.memo(({ recommendations, projectId }) => {
+  // State for expanded row
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const data = useMemo(() => [...recommendations], [recommendations]);
 
@@ -215,16 +236,19 @@ const ZoneComparisonChart: React.FC<ZoneComparisonChartProps> = React.memo(({ re
         transition={{ delay: 0.2 }}
         className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-full overflow-hidden"
     >
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/30">
-         <div>
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/30 backdrop-blur-sm">
+         <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </div>
             <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white tracking-tight">Placement Options</h3>
          </div>
-         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded shadow-sm">
+         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-full shadow-sm ring-1 ring-slate-900/5">
             {recommendations.length} Options
          </span>
       </div>
       
-      <div className="grid grid-cols-12 gap-4 px-6 py-2 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+      <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
          <div className="col-span-3">Details</div>
          <div className="col-span-2">Status</div>
          <div className="col-span-5 grid grid-cols-2 gap-6">

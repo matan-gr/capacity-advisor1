@@ -19,31 +19,48 @@ export default {
           950: '#020617', // Deepest background
         },
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#eff6ff', // More vibrant blue-ish tint
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6', // Bright Blue
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
+        },
+        accent: {
+          50: '#fdf4ff',
+          100: '#fae8ff',
+          200: '#f5d0fe',
+          300: '#f0abfc',
+          400: '#e879f9',
+          500: '#d946ef', // Fuchsia pop
+          600: '#c026d3',
+          700: '#a21caf',
+          800: '#86198f',
+          900: '#701a75',
+          950: '#4a044e',
         }
       },
       boxShadow: {
-        'glow': '0 0 20px -5px rgba(99, 102, 241, 0.4)',
-        'glow-lg': '0 0 40px -10px rgba(99, 102, 241, 0.5)',
+        'glow': '0 0 20px -5px rgba(59, 130, 246, 0.5)', // Blue glow
+        'glow-lg': '0 0 40px -10px rgba(59, 130, 246, 0.6)',
+        'glow-accent': '0 0 20px -5px rgba(217, 70, 239, 0.5)', // Fuchsia glow
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'neon': '0 0 5px theme("colors.primary.400"), 0 0 20px theme("colors.primary.600")',
       },
-      backgroundSize: {
-        '300%': '300%',
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'hero-glow': 'conic-gradient(from 180deg at 50% 50%, #2a8af6 0deg, #a853ba 180deg, #e92a67 360deg)',
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
         'gradient': 'gradient 8s linear infinite',
         'shimmer': 'shimmer 2.5s linear infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         float: {

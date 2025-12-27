@@ -41,7 +41,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ state, onExport, on
   return (
     <div className="animate-enter space-y-6">
        {/* Header */}
-       <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Capacity Report</h2>
               <div className="flex items-center gap-2 mt-1">
@@ -51,12 +51,12 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ state, onExport, on
                   </span>
               </div>
           </div>
-          <div className="flex gap-2">
-              <button disabled={!state.result} onClick={() => onExport('pdf')} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 disabled:opacity-50 shadow-sm">
+          <div className="flex gap-2 flex-wrap">
+              <button disabled={!state.result} onClick={() => onExport('pdf')} className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 disabled:opacity-50 shadow-sm">
                  PDF
               </button>
-              <button disabled={!state.result} onClick={() => onExport('csv')} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50 shadow-sm">CSV</button>
-              <button onClick={onClear} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold uppercase text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1">
+              <button disabled={!state.result} onClick={() => onExport('csv')} className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50 shadow-sm">CSV</button>
+              <button onClick={onClear} className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold uppercase text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1">
                   <Icons.Cancel />
                   Dismiss
               </button>

@@ -94,6 +94,7 @@ export const useCapacityLogic = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastFetchTimeRef = useRef<number | null>(null);
   const staleToastShownRef = useRef<boolean>(false);
+  const isFirstRender = useRef(true);
 
   // --- AI Stream Hook ---
   const { 
@@ -205,6 +206,33 @@ export const useCapacityLogic = () => {
     localStorage.setItem('appState', JSON.stringify(configToSave));
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state.project, state.region, state.selectedMachineType, state.selectedFamilies, state.size, state.targetShape, state.mockMode, state.darkMode]);
+
+  // Reset results when switching modes
+  useEffect(() => {
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+    }
+    
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+    }
+    resetStream();
+    
+    setState(prev => ({
+        ...prev,
+        result: null,
+        error: null,
+        groundingMetadata: null,
+        loading: false,
+        groundingLoading: false,
+        debugData: { 
+            ...INITIAL_DEBUG, 
+            mode: prev.mockMode ? 'mock' : 'real' 
+        }
+    }));
+  }, [state.mockMode, resetStream]);
 
   // Fetch Regions
   useEffect(() => {
@@ -513,6 +541,7 @@ export const useCapacityLogic = () => {
     isFetchingMachineTypes,
     regionOptions,
     machineDetails: availableMachineTypes.find(m => m.id === state.selectedMachineType) || STATIC_MACHINE_TYPES.find(m => m.id === state.selectedMachineType),
-    removeToast
+    removeToast,
+    regionConfig
   };
 };

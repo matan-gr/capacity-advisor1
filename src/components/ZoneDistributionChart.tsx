@@ -92,11 +92,12 @@ const ZoneDistributionChart: React.FC<ZoneDistributionChartProps> = React.memo((
       </div>
 
       {/* Chart Container */}
-      <div className="flex-grow flex items-end justify-between gap-2 w-full min-h-[160px] p-6 pb-2 relative z-10">
+      <div className="flex-grow w-full min-h-[160px] pt-20 px-6 pb-2 relative z-10 overflow-x-auto custom-scrollbar">
+         <div className="min-w-[300px] h-full flex items-end justify-between gap-2 relative">
          
          {/* Background Reference Grid */}
          {itemsToRender.length > 0 && (
-             <div className="absolute inset-0 px-6 pb-8 flex flex-col justify-between pointer-events-none opacity-50 z-0">
+             <div className="absolute inset-0 pb-6 flex flex-col justify-between pointer-events-none opacity-50 z-0">
                  {[100, 75, 50, 25].map(t => (
                      <div key={t} className="w-full border-t border-dashed border-slate-100 dark:border-slate-800/60 relative h-0">
                         <span className="absolute -top-2 -left-6 text-[8px] font-mono text-slate-300 dark:text-slate-600 w-4 text-right">{t}</span>
@@ -196,6 +197,7 @@ const ZoneDistributionChart: React.FC<ZoneDistributionChartProps> = React.memo((
                 )
             })
          )}
+         </div>
       </div>
 
       {/* Footer Summary */}

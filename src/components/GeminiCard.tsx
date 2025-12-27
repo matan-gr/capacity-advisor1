@@ -73,6 +73,7 @@ const LoadingStateDisplay = () => {
 };
 
 const parseInline = (text: string, keyPrefix: string) => {
+  if (!text) return [];
   // Regex to capture **bold** OR `code`
   // Note: split with capturing group returns the separators as well.
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
@@ -88,6 +89,7 @@ const parseInline = (text: string, keyPrefix: string) => {
 };
 
 const renderTable = (lines: string[], keyPrefix: string) => {
+    if (!lines || lines.length === 0) return null;
     const headerLine = lines[0];
     const headers = headerLine.split('|').map(c => c.trim()).filter(c => c);
     const dataLines = lines.slice(2).filter(l => l.trim().length > 0);
@@ -139,6 +141,7 @@ const GeminiCard = React.memo(({ data, loading }: GeminiCardProps) => {
   }
 
   const renderContent = (text: string) => {
+    if (!text) return null;
     const lines = text.split('\n');
     const elements: React.ReactNode[] = [];
     
@@ -290,7 +293,7 @@ const GeminiCard = React.memo(({ data, loading }: GeminiCardProps) => {
           </div>
        </div>
 
-       {data.sources.length > 0 && (
+       {data.sources?.length > 0 && (
           <div className="px-5 py-3 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center overflow-x-auto custom-scrollbar shrink-0">
              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase shrink-0 tracking-wider">References</span>
              {data.sources.map((s, i) => (

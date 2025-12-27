@@ -191,9 +191,9 @@ gcloud run deploy spot-advisor \
 ## 🔧 Troubleshooting
 
 ### Build Failures (TS2307: Cannot find module)
-If you encounter TypeScript errors during the build process inside Docker (e.g., `Cannot find module './hooks/useCapacityLogic'`), ensure your `tsconfig.json` is correctly configured to use standard resolution.
+If you encounter TypeScript errors during the build process inside Docker (e.g., `Cannot find module './hooks/useCapacityLogic'`), ensure your `tsconfig.json` is correctly configured to include the `src` directory.
 
-**Correct `tsconfig.json` configuration:**
+**Recommended `tsconfig.json` configuration:**
 ```json
 {
   "compilerOptions": {
@@ -202,16 +202,14 @@ If you encounter TypeScript errors during the build process inside Docker (e.g.,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "moduleResolution": "node", // or "bundler" for newer Vite versions
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "strict": true
   },
   "include": ["src"]
 }
