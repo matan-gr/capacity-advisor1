@@ -172,61 +172,110 @@ export const generateMockRecommendationsWithShape = (
     const recommendations: Recommendation[] = [];
   
     if (shape === TargetShape.BALANCED) {
-        // In Balanced mode, we split the load.
-        // This effectively reduces saturation per zone, leading to higher scores.
-        const zoneScores = zones.map(zone => {
-            const numShards = Math.min(zones.length, 3); // Assume max 3-way split
-            const splitSize = Math.ceil(size / numShards);
+        // BALANCED Mode: Generate multiple options with different distribution strategies
+        
+        // Strategy 1: Even Split across 3 zones (if possible)
+        if (zones.length >= 3 && size >= 3) {
+            const numShards = 3;
+            const splitSize = Math.floor(size / numShards);
+            const remainder = size % numShards;
             
-            const m = getNuancedSimulationMetrics(
-                machineTypeDetails?.family || 'General Purpose',
-                machineType,
-                region,
-                zone,
-                splitSize // Pass smaller size to calculator
-            );
-            return { zone, ...m };
-        });
+            // Pick top 3 zones
+            const zoneMetrics = zones.map(z => ({
+                zone: z,
+                ...getNuancedSimulationMetrics(machineTypeDetails?.family || 'General Purpose', machineType, region, z, splitSize)
+            })).sort((a, b) => b.obtainability - a.obtainability);
 
-        // Filter for viable zones
-        const viableZones = zoneScores
-            .filter(z => z.obtainability > 0.05)
-            .sort((a, b) => b.obtainability - a.obtainability);
+            const top3 = zoneMetrics.slice(0, 3);
+            
+            if (top3.every(z => z.obtainability > 0.05)) {
+                const shards: Shard[] = top3.map((z, idx) => ({
+                    location: `projects/mock/zones/${z.zone}`,
+                    machineType,
+                    count: idx === 0 ? splitSize + remainder : splitSize,
+                    provisioningModel: ProvisioningModel.SPOT
+                }));
+                
+                const avgScore = shards.reduce((acc, s, i) => acc + top3[i].obtainability, 0) / numShards;
+                const avgUptime = shards.reduce((acc, s, i) => acc + top3[i].uptimeScore, 0) / numShards;
 
-        if (viableZones.length === 0) {
-            return { recommendations: [] };
+                recommendations.push({
+                    scores: [
+                        { name: 'obtainability', value: avgScore },
+                        { name: 'uptime', value: avgUptime }
+                    ],
+                    shards
+                });
+            }
         }
 
-        // Logic: If we requested 100 VMs, and zones only support 20, we can't fulfill.
-        // But for simulation simplicity, we assume we take the top N viable zones.
-        const numShards = Math.min(viableZones.length, size > 1 ? 3 : 1);
-        const selectedZones = viableZones.slice(0, numShards);
-
-        const shards: Shard[] = selectedZones.map((z, idx) => {
-            const baseCount = Math.floor(size / numShards);
+        // Strategy 2: Split across top 2 zones
+        if (zones.length >= 2 && size >= 2) {
+            const numShards = 2;
+            const splitSize = Math.floor(size / numShards);
             const remainder = size % numShards;
-            const count = idx === 0 ? baseCount + remainder : baseCount;
-            
-            return {
-                location: `projects/mock/zones/${z.zone}`,
-                machineType: machineType,
-                count: count,
-                provisioningModel: ProvisioningModel.SPOT
-            };
-        });
 
-        const avgObtainability = selectedZones.reduce((acc, z) => acc + z.obtainability, 0) / numShards;
-        const avgUptime = selectedZones.reduce((acc, z) => acc + z.uptimeScore, 0) / numShards;
+            // Pick top 2 zones
+            const zoneMetrics = zones.map(z => ({
+                zone: z,
+                ...getNuancedSimulationMetrics(machineTypeDetails?.family || 'General Purpose', machineType, region, z, splitSize)
+            })).sort((a, b) => b.obtainability - a.obtainability);
 
-        recommendations.push({
-            scores: [
-                { name: 'obtainability', value: avgObtainability },
-                { name: 'uptime', value: avgUptime }
-            ],
-            shards: shards
+            const top2 = zoneMetrics.slice(0, 2);
+
+            if (top2.every(z => z.obtainability > 0.05)) {
+                const shards: Shard[] = top2.map((z, idx) => ({
+                    location: `projects/mock/zones/${z.zone}`,
+                    machineType,
+                    count: idx === 0 ? splitSize + remainder : splitSize,
+                    provisioningModel: ProvisioningModel.SPOT
+                }));
+
+                const avgScore = shards.reduce((acc, s, i) => acc + top2[i].obtainability, 0) / numShards;
+                const avgUptime = shards.reduce((acc, s, i) => acc + top2[i].uptimeScore, 0) / numShards;
+
+                recommendations.push({
+                    scores: [
+                        { name: 'obtainability', value: avgScore },
+                        { name: 'uptime', value: avgUptime }
+                    ],
+                    shards
+                });
+            }
+        }
+
+        // Strategy 3: Fallback to Best Single Zone (if splitting is bad or size is small)
+        // Even in Balanced mode, sometimes 1 zone is just better.
+        const zoneMetrics = zones.map(z => ({
+            zone: z,
+            ...getNuancedSimulationMetrics(machineTypeDetails?.family || 'General Purpose', machineType, region, z, size)
+        })).sort((a, b) => b.obtainability - a.obtainability);
+
+        const bestZone = zoneMetrics[0];
+        if (bestZone.obtainability > 0.05) {
+             recommendations.push({
+                scores: [
+                    { name: 'obtainability', value: bestZone.obtainability },
+                    { name: 'uptime', value: bestZone.uptimeScore }
+                ],
+                shards: [{
+                    location: `projects/mock/zones/${bestZone.zone}`,
+                    machineType,
+                    count: size,
+                    provisioningModel: ProvisioningModel.SPOT
+                }]
+            });
+        }
+
+        // Sort options by score
+        recommendations.sort((a, b) => {
+            const sA = a.scores.find(s => s.name === 'obtainability')?.value || 0;
+            const sB = b.scores.find(s => s.name === 'obtainability')?.value || 0;
+            return sB - sA;
         });
 
     } else {
+        // ANY_SINGLE_ZONE Mode
         zones.forEach(zone => {
             const { obtainability, uptimeScore } = getNuancedSimulationMetrics(
               machineTypeDetails?.family || 'General Purpose',

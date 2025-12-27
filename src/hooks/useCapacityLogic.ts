@@ -52,7 +52,8 @@ const INITIAL_STATE: AppState = {
   searchTerm: '',
   darkMode: false,
   groundingMetadata: null,
-  toasts: []
+  toasts: [],
+  validationErrors: {}
 };
 
 // GCP Project ID Regex: 6-30 chars, lowercase, digits, hyphens.
@@ -66,6 +67,14 @@ export const useCapacityLogic = () => {
       try {
         const parsed = JSON.parse(saved);
         const safeFamilies = Array.isArray(parsed.selectedFamilies) ? parsed.selectedFamilies : ['All'];
+        
+        // Apply theme immediately
+        if (parsed.darkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         return { 
             ...INITIAL_STATE, 
             ...parsed, 
@@ -77,11 +86,19 @@ export const useCapacityLogic = () => {
             debugData: INITIAL_DEBUG,
             accessToken: '', // Don't persist sensitive tokens
             searchTerm: '',
-            toasts: []
+            toasts: [],
+            validationErrors: {}
         };
       } catch (e) { return INITIAL_STATE; }
     }
-    return INITIAL_STATE;
+    
+    // Fallback to System Preference
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (systemPrefersDark) {
+        document.documentElement.classList.add('dark');
+    }
+
+    return { ...INITIAL_STATE, darkMode: systemPrefersDark };
   });
 
   const [availableRegions, setAvailableRegions] = useState<string[]>(REGIONS);
@@ -109,7 +126,15 @@ export const useCapacityLogic = () => {
 
   // --- Helpers ---
   const updateState = useCallback((updates: Partial<AppState>) => {
-    setState(prev => ({ ...prev, ...updates }));
+    setState(prev => {
+        const newErrors = { ...prev.validationErrors };
+        if (updates.project) delete newErrors.project;
+        if (updates.region) delete newErrors.region;
+        if (updates.selectedMachineType) delete newErrors.machineType;
+        if (updates.accessToken) delete newErrors.accessToken;
+        
+        return { ...prev, ...updates, validationErrors: newErrors };
+    });
   }, []);
 
   const addLog = useCallback((level: LogEntry['level'], message: string) => {
@@ -316,27 +341,35 @@ export const useCapacityLogic = () => {
     }
 
     // --- Validation ---
+    const errors: Record<string, boolean> = {};
+    let hasError = false;
+
     if (!state.selectedMachineType || state.selectedMachineType.trim() === '') {
+        errors.machineType = true;
         addToast('error', 'Missing Machine Type', 'Please select a specific Machine Type.');
-        return;
+        hasError = true;
     }
 
     if (!state.region || state.region.trim() === '') {
+        errors.region = true;
         addToast('error', 'Missing Region', 'A Target Region must be selected.');
-        return;
+        hasError = true;
     }
 
     if (!state.mockMode) {
         if (!state.project || state.project.trim() === '') {
+            errors.project = true;
             addToast('error', 'Missing Project ID', 'Project ID required for Live API.');
-            return;
-        }
-        if (!PROJECT_ID_REGEX.test(state.project)) {
+            hasError = true;
+        } else if (!PROJECT_ID_REGEX.test(state.project)) {
+            errors.project = true;
             addToast('error', 'Invalid Project ID', 'Format: lowercase, digits, hyphens.');
-            return;
+            hasError = true;
         }
+        
         // Strict Token Check for Live Mode
         if (!state.accessToken || state.accessToken.trim() === '') {
+             errors.accessToken = true;
              const tokenError = JSON.stringify({
                  clientError: true,
                  title: "Authentication Required",
@@ -345,8 +378,13 @@ export const useCapacityLogic = () => {
              });
              addToast('error', 'Missing Access Token', 'Please provide a valid token to query real GCP data.');
              updateState({ error: getFriendlyErrorMessage(401, tokenError) });
-             return;
+             hasError = true;
         }
+    }
+
+    if (hasError) {
+        updateState({ validationErrors: errors });
+        return;
     }
     
     abortControllerRef.current = new AbortController();
@@ -363,6 +401,12 @@ export const useCapacityLogic = () => {
     // Reset stale timer
     lastFetchTimeRef.current = null;
     staleToastShownRef.current = false;
+    
+    // Clear any existing stale toasts
+    setState(prev => ({
+        ...prev,
+        toasts: prev.toasts.filter(t => t.title !== 'Data Freshness Notice')
+    }));
 
     // Initialize Debug Data
     const initialDebugData: DebugData = {

@@ -125,7 +125,29 @@ server {
 }
 ```
 
-### 3. .dockerignore (Optional but Recommended)
+### 3. cloudbuild.yaml (For Google Cloud Build)
+Create a file named `cloudbuild.yaml`. This automates the build and push process on Google Cloud Platform.
+
+```yaml
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--build-arg', 'API_KEY=${_API_KEY}',
+      '-t', 'gcr.io/$PROJECT_ID/spot-advisor',
+      '.'
+    ]
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/spot-advisor']
+images:
+  - 'gcr.io/$PROJECT_ID/spot-advisor'
+substitutions:
+  _API_KEY: '' # Default empty, must be provided at trigger time
+```
+
+### 4. .dockerignore (Optional but Recommended)
 Create a `.dockerignore` file to speed up builds by excluding unnecessary files.
 
 ```text

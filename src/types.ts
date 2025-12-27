@@ -127,4 +127,5 @@ export interface AppState {
   darkMode: boolean;
   groundingMetadata: GroundingMetadata | null;
   toasts: Toast[];
+  validationErrors: Record<string, boolean>;
 }

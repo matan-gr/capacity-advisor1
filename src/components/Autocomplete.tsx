@@ -9,9 +9,10 @@ interface AutocompleteProps {
   onChange: (value: string) => void;
   label: string;
   placeholder?: string;
+  error?: boolean;
 }
 
-const Autocomplete: React.FC<AutocompleteProps> = React.memo(({ options, value, onChange, label, placeholder }) => {
+const Autocomplete: React.FC<AutocompleteProps> = React.memo(({ options, value, onChange, label, placeholder, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -192,7 +193,11 @@ const Autocomplete: React.FC<AutocompleteProps> = React.memo(({ options, value, 
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-10 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 truncate shadow-sm"
+          className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-xl pl-10 pr-10 py-3 text-sm font-semibold outline-none transition-all placeholder:text-slate-400 truncate shadow-sm ${
+              error 
+              ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500 bg-red-50/10' 
+              : 'border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500'
+          }`}
           autoComplete="off"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">

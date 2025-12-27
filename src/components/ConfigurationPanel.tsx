@@ -120,7 +120,9 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                                         ? isValidProject 
                                             ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500' 
                                             : 'border-red-500 focus:border-red-500 bg-red-50/10'
-                                        : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-slate-300 dark:hover:border-slate-700'
+                                        : state.validationErrors?.project
+                                            ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                            : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-slate-300 dark:hover:border-slate-700'
                                     }
                                 `}
                                 placeholder="gcp-project-id"
@@ -199,6 +201,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                              value={state.selectedMachineType}
                              onChange={(id) => updateState({ selectedMachineType: id })}
                              placeholder="Search instance type..."
+                             error={state.validationErrors?.machineType}
                           />
                        </div>
                        <MachineTypeInfo details={machineDetails} />
@@ -214,6 +217,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                                 onChange={(id) => updateState({ region: id })}
                                 placeholder="Search region..."
                                 isLoading={isFetchingRegions}
+                                error={state.validationErrors?.region}
                            />
                            {/* Region Error Message */}
                            <AnimatePresence>
@@ -353,7 +357,11 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = React.memo(({
                        <textarea 
                            value={state.accessToken}
                            onChange={(e) => updateState({ accessToken: e.target.value })}
-                           className="w-full h-24 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600 custom-scrollbar shadow-inner"
+                           className={`w-full h-24 bg-slate-50 dark:bg-slate-950 border rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-slate-200 focus:ring-1 outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600 custom-scrollbar shadow-inner ${
+                               state.validationErrors?.accessToken 
+                               ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50/10' 
+                               : 'border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500'
+                           }`}
                            placeholder="Paste token here..."
                        />
                    </div>

@@ -40,7 +40,8 @@ const mockState: AppState = {
   searchTerm: '',
   darkMode: false,
   groundingMetadata: null,
-  toasts: []
+  toasts: [],
+  validationErrors: {}
 };
 
 describe('Unit Test Suite', () => {

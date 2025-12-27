@@ -114,32 +114,32 @@ const cleanMarkdownForPDF = (text: string): string => {
   if (!text) return '';
 
   let cleaned = text
-    // 1. Remove Emojis (Ranges for various emoji blocks)
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Symbols & Pictographs
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport & Map
-    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
-    .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Dingbats
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental
-    // 2. Normalize Quotes and Dashes
+    // 1. Remove Emojis
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+    // 2. Normalize Quotes
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
-    // 3. Remove Bold/Italic/Code Markdown
+    // 3. Remove Bold/Italic markers but keep text
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
     .replace(/`(.*?)`/g, '$1')
-    // 4. Format Headers (convert ### Header to Uppercase with spacing)
-    .replace(/^###\s+(.+)$/gm, '\n\n$1\n----------------------------------------')
-    .replace(/^##\s+(.+)$/gm, '\n\n$1\n========================================')
+    // 4. Format Headers (Just strip hashes, renderer handles bolding)
+    .replace(/^###\s+(.+)$/gm, '\n$1') 
+    .replace(/^##\s+(.+)$/gm, '\n$1')
     // 5. Format Lists
-    .replace(/^\s*[\-\*]\s+/gm, '  • ')
+    .replace(/^\s*[\-\*]\s+/gm, '• ')
     // 6. Format Blockquotes
-    .replace(/^>\s?/gm, '  | ')
-    // 7. Flatten Tables (replace pipes with spaces, remove outer pipes)
-    .replace(/^\|/gm, '')
-    .replace(/\|$/gm, '')
-    .replace(/\|/g, '   ')
+    .replace(/^>\s?/gm, '')
+    // 7. Flatten Tables - REMOVED to allow autoTable detection
+    // .replace(/^\|/gm, '')
+    // .replace(/\|$/gm, '')
+    // .replace(/\|/g, '   ')
     .trim();
 
   return cleaned;
@@ -252,24 +252,123 @@ export const generatePDF = (data: CapacityAdvisorResponse, state: AppState, grou
       // --- Main Insight Rendering ---
       doc.setFontSize(10);
       doc.setTextColor(50);
-      doc.setFont('courier', 'normal'); // Monospace for alignment
+      doc.setFont('helvetica', 'normal'); // Switch to Helvetica for better readability
       
       const cleanText = cleanMarkdownForPDF(mainText);
-      const splitText = doc.splitTextToSize(cleanText, 180);
+      const lines = cleanText.split('\n');
       
-      // Pagination for text
-      const lineHeight = 5;
-      for (let i = 0; i < splitText.length; i++) {
-        if (finalY > 280) {
+      const lineHeight = 6; // Increased line height
+      let inTable = false;
+      let tableData: string[][] = [];
+      let tableHeaders: string[] = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        
+        // Table Detection
+        if (line.trim().startsWith('|')) {
+            if (!inTable) {
+                inTable = true;
+                // Assuming first line is header
+                tableHeaders = line.split('|').map(c => c.trim()).filter(c => c);
+                // Skip separator line if it exists next
+                if (lines[i+1] && lines[i+1].includes('---')) {
+                    i++;
+                }
+            } else {
+                const row = line.split('|').map(c => c.trim()).filter(c => c);
+                if (row.length > 0) tableData.push(row);
+            }
+            continue;
+        } else if (inTable) {
+            // End of table
+            inTable = false;
+            if (tableHeaders.length > 0 && tableData.length > 0) {
+                 autoTable(doc, {
+                    startY: finalY,
+                    head: [tableHeaders],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [100, 116, 139], textColor: 255, fontStyle: 'bold' },
+                    styles: { fontSize: 9, cellPadding: 3 },
+                    margin: { left: 14, right: 14 }
+                 });
+                 finalY = (doc as any).lastAutoTable.finalY + 10;
+                 tableData = [];
+                 tableHeaders = [];
+            }
+        }
+
+        // Pagination Check
+        if (finalY > 275) {
           doc.addPage();
           finalY = 20;
         }
-        // Check if line looks like a header (from our cleaner)
-        if (splitText[i].includes('----') || splitText[i].includes('====')) {
-            finalY += 2; // Extra space before separator
+
+        // Header Detection (Lines followed by separators or starting with specific patterns)
+        if (line.includes('----') || line.includes('====')) {
+             // Skip the separator line itself, just add spacing
+             continue;
         }
-        doc.text(splitText[i], 14, finalY);
-        finalY += lineHeight;
+        
+        // Bold/Header Logic (Heuristic based on cleaner output)
+        const isHeader = line === line.toUpperCase() && line.length > 5 && !line.includes('•');
+        const isList = line.trim().startsWith('•');
+        
+        if (isHeader) {
+            finalY += 4; // Space before header
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(79, 70, 229); // Indigo for headers
+            doc.text(line, 14, finalY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(50); // Reset color
+            finalY += lineHeight + 2;
+        } else if (isList) {
+            // Indent list items
+            const splitLine = doc.splitTextToSize(line, 170);
+            doc.text(splitLine, 20, finalY); // Indent 6mm
+            finalY += (splitLine.length * lineHeight);
+        } else {
+            // Standard Paragraph
+            // Handle inline bolding simple case: **text**
+            const parts = line.split(/(\*\*.*?\*\*)/g);
+            let currentX = 14;
+            
+            // If line is too long, we fall back to standard splitTextToSize (no bolding support for simplicity in wrapping)
+            if (doc.getStringUnitWidth(line) * 10 > 180) {
+                 const splitLine = doc.splitTextToSize(line, 180);
+                 doc.text(splitLine, 14, finalY);
+                 finalY += (splitLine.length * lineHeight);
+            } else {
+                parts.forEach(part => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        doc.setFont('helvetica', 'bold');
+                        const text = part.slice(2, -2);
+                        doc.text(text, currentX, finalY);
+                        currentX += doc.getTextWidth(text);
+                        doc.setFont('helvetica', 'normal');
+                    } else {
+                        doc.text(part, currentX, finalY);
+                        currentX += doc.getTextWidth(part);
+                    }
+                });
+                finalY += lineHeight;
+            }
+        }
+      }
+      
+      // Flush any remaining table
+      if (inTable && tableHeaders.length > 0) {
+         autoTable(doc, {
+            startY: finalY,
+            head: [tableHeaders],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [100, 116, 139], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 3 },
+            margin: { left: 14, right: 14 }
+         });
+         finalY = (doc as any).lastAutoTable.finalY + 10;
       }
       
       // Sources

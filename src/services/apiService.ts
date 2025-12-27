@@ -211,5 +211,12 @@ export const fetchAllZonesCapacity = async (
       throw new Error(JSON.stringify(stockoutError));
   }
 
+  // Sort recommendations by obtainability score (descending)
+  data.recommendations.sort((a, b) => {
+      const scoreA = a.scores.find(s => s.name === 'obtainability')?.value || 0;
+      const scoreB = b.scores.find(s => s.name === 'obtainability')?.value || 0;
+      return scoreB - scoreA;
+  });
+
   return data;
 };

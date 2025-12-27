@@ -124,6 +124,26 @@ Your mandate is to validate the user's capacity request against real-world const
     }
   } catch (error: any) {
     console.error("Gemini Search Grounding Error:", error);
+    
+    // Handle Quota Exceeded (429) specifically
+    const errorStr = JSON.stringify(error);
+    const isQuotaError = 
+        error.status === 429 || 
+        error.error?.code === 429 ||
+        error.message?.includes('429') || 
+        error.message?.includes('RESOURCE_EXHAUSTED') || 
+        error.message?.includes('quota') ||
+        errorStr.includes('RESOURCE_EXHAUSTED') ||
+        errorStr.includes('"code":429');
+
+    if (isQuotaError) {
+        yield { 
+            type: 'text', 
+            content: `\n\n### ⚠️ AI Analysis Unavailable\n\n**Reason:** The daily quota for the AI model has been exceeded.\n\n**Action:** Please try again later or check your billing details if you are the project owner.\n\n> *Note: Basic capacity data is still accurate. Only the AI-generated insights are affected.*` 
+        };
+        return;
+    }
+
     yield { type: 'text', content: `\n\n**Error retrieving insights:** ${error.message}` };
   }
 }
