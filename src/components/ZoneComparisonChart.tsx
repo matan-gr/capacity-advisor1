@@ -23,6 +23,10 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
     ? `${rec.shards.length} Zones (Mixed)` 
     : (primaryShard.location.split('/').pop() || 'unknown');
   
+  // Consistent naming for all options
+  const optionLabel = `Option ${index + 1}`;
+  const optionSubLabel = isMultiZone ? 'Balanced Distribution' : zoneLabel;
+  
   const obtainabilityScore = rec.scores.find(s => s.name === 'obtainability')?.value || 0;
   const uptimeScore = rec.scores.find(s => s.name === 'uptime')?.value || 0;
 
@@ -64,17 +68,36 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
 
   // Use lazy state to generate the random suffix ONCE on mount
   const [randomId] = useState(() => Date.now().toString().slice(-4));
+  const [commandType, setCommandType] = useState<'GCE' | 'GKE'>('GCE');
 
-  const gcloudCommand = useMemo(() => {
-    return isMultiZone
-      ? `# Multi-zone allocation recommended\n# Manually create instances in:${rec.shards.map(s => `\n# - ${s.location.split('/').pop()}: ${s.count} VMs`).join('')}`
-      : `gcloud compute instances create spot-${randomId} \\
+  const provisioningCommand = useMemo(() => {
+    if (commandType === 'GKE') {
+        const zones = rec.shards.map(s => s.location.split('/').pop()).join(',');
+        return `gcloud container node-pools create spot-pool-${randomId} \\
+  --cluster=my-cluster \\
+  --project=${projectId} \\
+  --machine-type=${primaryShard.machineType} \\
+  --spot \\
+  --num-nodes=${Math.ceil(totalCount / rec.shards.length)} \\
+  --node-locations=${zones}`;
+    }
+
+    // GCE Logic
+    if (isMultiZone) {
+        // Generate a bash script for multi-zone creation
+        return rec.shards.map((s, i) => {
+            const z = s.location.split('/').pop();
+            return `gcloud compute instances create spot-${randomId}-${i+1} --zone=${z} --machine-type=${primaryShard.machineType} --provisioning-model=SPOT --count=${s.count} --project=${projectId} &`;
+        }).join('\n') + '\nwait';
+    }
+
+    return `gcloud compute instances create spot-${randomId} \\
   --project=${projectId} \\
   --zone=${zoneLabel} \\
   --machine-type=${primaryShard.machineType} \\
   --provisioning-model=SPOT \\
   --count=${totalCount}`;
-  }, [isMultiZone, rec.shards, randomId, projectId, zoneLabel, primaryShard.machineType, totalCount]);
+  }, [isMultiZone, rec.shards, randomId, projectId, zoneLabel, primaryShard.machineType, totalCount, commandType]);
 
   const rowVariants = {
       hidden: { opacity: 0, y: 10 },
@@ -103,7 +126,7 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
             <div>
                 <div className="flex items-center gap-2">
                     <div className="font-mono text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {isMultiZone ? `Option ${index + 1}` : zoneLabel}
+                        {optionLabel}
                     </div>
                     {index === 0 && (
                         <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm">
@@ -115,12 +138,12 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
                     {isMultiZone ? (
                         <>
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                            <span>Balanced Distribution</span>
+                            <span>{optionSubLabel}</span>
                         </>
                     ) : (
                         <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
-                            <span>{primaryShard.machineType}</span>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <span>{optionSubLabel}</span>
                         </>
                     )}
                 </div>
@@ -235,7 +258,7 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                         Shard Breakdown
                    </h5>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                        {rec.shards.map((s, idx) => (
                            <div key={idx} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
                                <div className="flex flex-col">
@@ -252,13 +275,55 @@ const ZoneRow: React.FC<ZoneRowProps> = React.memo(({ rec, projectId, isExpanded
                </div>
            )}
 
-           <div className="p-4 bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm mt-2">
-                 <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Provisioning Command</h4>
-                    <button className="text-[9px] text-indigo-500 dark:text-indigo-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(gcloudCommand); }}>COPY</button>
+           <div className="mt-4 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm group/cmd">
+                 <div className="flex justify-between items-center px-4 py-2 bg-slate-200/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="flex gap-1.5">
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider ml-2">Provisioning Command</span>
+                        </div>
+                        
+                        {/* Command Type Toggle */}
+                        <div className="flex bg-slate-200 dark:bg-slate-800 rounded p-0.5">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setCommandType('GCE'); }}
+                                className={`px-2 py-0.5 text-[9px] font-bold rounded transition-colors ${commandType === 'GCE' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                            >
+                                GCE
+                            </button>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setCommandType('GKE'); }}
+                                className={`px-2 py-0.5 text-[9px] font-bold rounded transition-colors ${commandType === 'GKE' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                            >
+                                GKE
+                            </button>
+                        </div>
+                    </div>
+
+                    <button 
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all active:scale-95 shadow-sm"
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            navigator.clipboard.writeText(provisioningCommand);
+                        }}
+                    >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                        COPY
+                    </button>
                  </div>
-                 <div className="bg-slate-900 rounded-md p-3 border border-slate-800 shadow-inner group-hover:border-slate-700 transition-colors">
-                    <pre className="text-[10px] text-indigo-200 font-mono whitespace-pre-wrap leading-relaxed select-all">{gcloudCommand}</pre>
+                 <div className="p-4 bg-slate-50 dark:bg-[#0f172a] relative">
+                    <pre className="text-[11px] font-mono text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed select-all font-medium">
+                        {provisioningCommand.split('\n').map((line, i) => (
+                            <div key={i} className="flex">
+                                <span className="select-none text-slate-300 dark:text-slate-700 w-6 text-right mr-3 font-normal">{i + 1}</span>
+                                <span className={line.startsWith('#') ? 'text-slate-400 dark:text-slate-500 italic' : ''}>{line}</span>
+                            </div>
+                        ))}
+                    </pre>
                  </div>
            </div>
         </div>

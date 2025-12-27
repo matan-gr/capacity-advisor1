@@ -66,7 +66,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package definition
-COPY package.json package-lock.json* ./
+# Note: We intentionally only copy package.json (ignoring lockfile) to ensure 
+# we install the latest compatible patch versions, which often fixes security warnings.
+COPY package.json ./
 
 # Update npm to latest version (optional, suppresses version warnings)
 RUN npm install -g npm@latest

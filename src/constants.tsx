@@ -19,10 +19,10 @@ import {
   Globe,
   AlertTriangle,
   Search,
-  Sparkles,
-  Link,
-  BarChart,
-  PieChart
+  Trash2,
+  Code2,
+  FileText,
+  ArrowUp
 } from 'lucide-react';
 
 export const Icons = {
@@ -45,8 +45,8 @@ export const Icons = {
   Globe: (props: any) => <Globe size={14} {...props} />,
   Alert: (props: any) => <AlertTriangle size={16} {...props} />,
   Search: (props: any) => <Search size={14} {...props} />,
-  Sparkles: (props: any) => <Sparkles size={14} {...props} />,
-  Link: (props: any) => <Link size={14} {...props} />,
-  BarChart: (props: any) => <BarChart size={14} {...props} />,
-  PieChart: (props: any) => <PieChart size={14} {...props} />
+  Trash: (props: any) => <Trash2 size={14} {...props} />,
+  Code: (props: any) => <Code2 size={14} {...props} />,
+  FileText: (props: any) => <FileText size={14} {...props} />,
+  ArrowUp: (props: any) => <ArrowUp size={16} {...props} />
 };

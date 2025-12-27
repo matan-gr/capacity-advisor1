@@ -144,6 +144,22 @@ Your mandate is to validate the user's capacity request against real-world const
         return;
     }
 
+    // Handle Service Unavailable (503)
+    const isServiceUnavailable = 
+        error.status === 503 ||
+        error.error?.code === 503 ||
+        error.message?.includes('503') ||
+        error.message?.includes('Service Unavailable') ||
+        error.message?.includes('Overloaded');
+
+    if (isServiceUnavailable) {
+        yield { 
+            type: 'text', 
+            content: `\n\n### ⚠️ AI Service Temporarily Unavailable\n\n**Reason:** The AI service is currently overloaded or experiencing downtime.\n\n**Action:** Please try again in a few minutes.\n\n> *Note: Basic capacity data is still accurate.*` 
+        };
+        return;
+    }
+
     yield { type: 'text', content: `\n\n**Error retrieving insights:** ${error.message}` };
   }
 }

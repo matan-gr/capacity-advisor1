@@ -9,7 +9,7 @@ interface ToastProps {
   onClose: (id: string) => void;
 }
 
-const ToastItem: React.FC<ToastProps> = ({ toast, onClose }) => {
+const ToastItem: React.FC<ToastProps & { index: number; total: number }> = ({ toast, onClose, index, total }) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remainingTimeRef = useRef<number>(toast.duration || 6000);
 
@@ -37,14 +37,29 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onClose }) => {
     info: <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0"><Icons.Info size={12} strokeWidth={3} /></div>
   };
 
+  // 0 = Front (Newest), 1 = Middle, 2 = Back
+  const isStacked = total > 1 && toast.type === 'error';
+  const reverseIdx = total - 1 - index;
+  
+  const offset = isStacked ? reverseIdx * 15 : 0; 
+  const scale = isStacked ? 1 - reverseIdx * 0.05 : 1;
+  const opacity = isStacked ? 1 - reverseIdx * 0.2 : 1;
+  const zIndex = isStacked ? 100 - reverseIdx : 1;
+
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, x: -20, scale: 0.95 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className={`w-full md:w-80 p-4 rounded-lg flex gap-3 relative cursor-pointer group ${styles[toast.type]}`}
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ 
+        opacity: opacity, 
+        y: -offset, 
+        scale: scale,
+        zIndex: zIndex 
+      }}
+      exit={{ opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      style={isStacked ? { position: 'absolute', bottom: 0, left: 0, right: 0 } : {}}
+      className={`w-full p-4 rounded-lg flex gap-3 relative cursor-pointer group ${styles[toast.type]}`}
       onClick={() => onClose(toast.id)}
     >
       <div className="pt-0.5">
@@ -62,18 +77,20 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onClose }) => {
           <Icons.Cancel size={12} />
       </button>
 
-      {/* Timer Bar */}
-      <motion.div 
-        initial={{ width: '100%' }}
-        animate={{ width: '0%' }}
-        transition={{ duration: (toast.duration || 6000) / 1000, ease: 'linear' }}
-        className={`absolute bottom-0 left-0 h-0.5 opacity-50 ${
-            toast.type === 'success' ? 'bg-emerald-500' :
-            toast.type === 'error' ? 'bg-red-500' :
-            toast.type === 'warning' ? 'bg-amber-500' :
-            'bg-blue-500'
-        }`}
-      />
+      {/* Timer Bar - Only active for the front toast */}
+      {reverseIdx === 0 && (
+        <motion.div 
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: (toast.duration || 6000) / 1000, ease: 'linear' }}
+            className={`absolute bottom-0 left-0 h-0.5 opacity-50 ${
+                toast.type === 'success' ? 'bg-emerald-500' :
+                toast.type === 'error' ? 'bg-red-500' :
+                toast.type === 'warning' ? 'bg-amber-500' :
+                'bg-blue-500'
+            }`}
+        />
+      )}
     </motion.div>
   );
 };
@@ -84,15 +101,43 @@ interface ToastContainerProps {
 }
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) => {
+  // Separate errors from other toasts
+  const errorToasts = toasts.filter(t => t.type === 'error');
+  const otherToasts = toasts.filter(t => t.type !== 'error');
+
+  // Only stack the last 3 errors
+  const visibleErrors = errorToasts.slice(-3);
+
   return (
     <div className="fixed bottom-6 left-6 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm">
+      {/* Render non-error toasts normally (vertical list) */}
       <AnimatePresence mode="popLayout">
-        {toasts.map(toast => (
+        {otherToasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
-            <ToastItem toast={toast} onClose={removeToast} />
+            <ToastItem toast={toast} onClose={removeToast} index={0} total={1} />
           </div>
         ))}
       </AnimatePresence>
+
+      {/* Render error stack if any exist */}
+      {visibleErrors.length > 0 && (
+        <div className="relative w-full h-32 flex items-end pointer-events-none">
+            <div className="relative w-full">
+                <AnimatePresence mode="popLayout">
+                    {visibleErrors.map((toast, index) => (
+                        <div key={toast.id} className="pointer-events-auto">
+                            <ToastItem 
+                                toast={toast} 
+                                onClose={removeToast} 
+                                index={index} 
+                                total={visibleErrors.length} 
+                            />
+                        </div>
+                    ))}
+                </AnimatePresence>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
